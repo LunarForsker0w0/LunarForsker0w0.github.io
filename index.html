@@ -46,8 +46,18 @@ h1 { font-size:1.8em; margin-bottom:10px; position:relative; z-index:1; }
 .square { background: rgba(255,255,255,0.1); animation: floatSquare linear infinite alternate; }
 @keyframes floatSquare { from{transform:translateY(0) translateX(0); opacity:0.05;} to{transform:translateY(-20px) translateX(20px); opacity:0.15;} }
 
-.heart-bg { font-size:30px; color: rgba(255,100,150,0.3); animation: floatHeart linear infinite alternate; }
-@keyframes floatHeart { from{transform:translateY(0) translateX(0) rotate(0deg); opacity:0.3;} to{transform:translateY(-30px) translateX(20px) rotate(20deg); opacity:0.6;} }
+/* CSSсная анимка */
+/*.heart-bg { font-size:30px; color: rgba(255,100,150,0.3); animation: floatHeart linear infinite alternate; } */
+/*@keyframes floatHeart { from{transform:translateY(0) translateX(0) rotate(0deg); opacity:0.3;} to{transform:translateY(-30px) translateX(20px) rotate(20deg); opacity:0.6;} }*/
+
+.heart-bg {
+  position: absolute;
+  font-size: 30px;
+  color: rgba(255,100,150,0.3);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+}
 
 .particle { width:3px; height:3px; background:rgba(255,255,255,0.5); border-radius:50%; position:absolute; pointer-events:none; animation: floatParticle linear infinite; }
 @keyframes floatParticle { from{transform:translateY(0); opacity:0.3;} to{transform:translateY(-50px); opacity:0;} }
@@ -59,6 +69,27 @@ h1 { font-size:1.8em; margin-bottom:10px; position:relative; z-index:1; }
 
 .main-heart { font-size:50px; animation:pulse 1.5s infinite; margin-bottom:10px; position:relative; z-index:1; }
 @keyframes pulse { 0%{transform:scale(1);} 50%{transform:scale(1.2);} 100%{transform:scale(1);} }
+
+@keyframes heartSwap {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  51% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.main-heart.swapping {
+  animation: heartSwap 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
 
 #toggleSlider {
   position: fixed;
@@ -200,19 +231,71 @@ function createSquares(n){
     document.body.appendChild(sq);
   }
 }
-function createHearts(n){
-  for(let i = 0; i < n; i++){
+let floatingHearts = [];
+const HEART_COUNT = 12;
+const WIND_INTERVAL = 5000; // каждые 5 секунд — новый импульс
+const REPULSION_RADIUS = 150;
+const REPULSION_STRENGTH = 5000;
+
+function createHearts(n) {
+  for (let i = 0; i < n; i++) {
     const h = document.createElement('div');
-    h.classList.add('bg-element','heart-bg');
+    h.classList.add('heart-bg');
     h.innerText = '❤️';
-    const size = 20 + Math.random() * 30;
+    // Размер как в index.txt: от ~30px до ~60px
+    const size = 30 + Math.random() * 30;
     h.style.fontSize = size + 'px';
-    h.style.top = Math.random() * (window.innerHeight - size) + 'px';
-    h.style.left = Math.random() * (window.innerWidth - size) + 'px';
-    h.style.animationDuration = (5 + Math.random() * 7) + 's';
     h.style.opacity = 0.3 + Math.random() * 0.3;
     document.body.appendChild(h);
+    floatingHearts.push({
+      el: h,
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      // Очень медленное, почти незаметное начальное движение
+      vx: (Math.random() - 0.5) * 2,  // Было *10 → теперь *2
+      vy: (Math.random() - 0.5) * 2,
+      size: size
+    });
   }
+  requestAnimationFrame(animateHearts);
+}
+
+function animateHearts() {
+  for (const heart of floatingHearts) {
+    // Очень слабое затухание — почти незаметное, но предотвращает "разгон"
+    heart.vx *= 0.995;  // Было 0.92 → теперь 0.995
+    heart.vy *= 0.995;
+
+    // Плавное "дрейфовое" движение (имитация CSS alternate)
+    // Добавим tiny random drift каждые кадры — но очень слабо
+    if (Math.random() < 0.02) { // раз в ~50 кадров
+      heart.vx += (Math.random() - 0.5) * 0.5;
+      heart.vy += (Math.random() - 0.5) * 0.5;
+    }
+
+    // Ограничим максимальную скорость, чтобы не было рывков
+    const maxSpeed = 3;
+    const speed = Math.hypot(heart.vx, heart.vy);
+    if (speed > maxSpeed) {
+      heart.vx = (heart.vx / speed) * maxSpeed;
+      heart.vy = (heart.vy / speed) * maxSpeed;
+    }
+
+    // Обновление позиции
+    heart.x += heart.vx;
+    heart.y += heart.vy;
+
+    // Мягкий отскок от краёв
+    if (heart.x < 0) { heart.x = 0; heart.vx = Math.abs(heart.vx) * 0.4; }
+    if (heart.x > window.innerWidth) { heart.x = window.innerWidth; heart.vx = -Math.abs(heart.vx) * 0.4; }
+    if (heart.y < 0) { heart.y = 0; heart.vy = Math.abs(heart.vy) * 0.4; }
+    if (heart.y > window.innerHeight) { heart.y = window.innerHeight; heart.vy = -Math.abs(heart.vy) * 0.4; }
+
+    // Применить позицию
+    heart.el.style.left = heart.x + 'px';
+    heart.el.style.top = heart.y + 'px';
+  }
+  requestAnimationFrame(animateHearts);
 }
 function createParticles(n){
   for(let i = 0; i < n; i++){
@@ -249,11 +332,51 @@ function createClickHearts(x, y){
     setTimeout(() => h.remove(), dur);
   }
 }
-document.body.addEventListener('click', e => createClickHearts(e.clientX, e.clientY));
+
+// -------------------- Отталкивание фоновых сердец --------------------
+
+function repulseHearts(x, y) {
+  for (const heart of floatingHearts) {
+    const dx = heart.x - x;
+    const dy = heart.y - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < REPULSION_RADIUS && dist > 0) {
+      const force = REPULSION_STRENGTH / (dist + 10); // +10 чтобы избежать деления на 0
+      heart.vx += (dx / dist) * force * 0.016; // 0.016 ≈ dt для 60 FPS
+      heart.vy += (dy / dist) * force * 0.016;
+    }
+  }
+}
+
+
+
+// -------------------- ЕДИНЫЙ ОБРАБОТЧИК С ИСКЛЮЧЕНИЕМ ДЛЯ ЦЕНТРАЛЬНОГО СЕРДЦА --------------------
+
+function handleInteraction(x, y) {
+  createClickHearts(x, y);   // разлёт
+  repulseHearts(x, y);       // отталкивание фоновых сердец
+}
+
+document.body.addEventListener('click', e => {
+  if (e.target.classList.contains('main-heart')) {
+    changeMainHeart();
+  } else {
+    handleInteraction(e.clientX, e.clientY);
+  }
+});
+
 document.body.addEventListener('touchstart', e => {
-  const t = e.touches[0];
-  createClickHearts(t.clientX, t.clientY);
+  if (e.touches.length === 1 && e.touches[0].target.classList.contains('main-heart')) {
+    changeMainHeart();
+    e.preventDefault();
+  } else {
+    for (let touch of e.touches) {
+      handleInteraction(touch.clientX, touch.clientY);
+    }
+  }
 }, { passive: false });
+
+
 
 // -------------------- Солнце и Луна --------------------
 const sun = document.querySelector('.sun');
@@ -449,6 +572,24 @@ function checkConnection(idx){
 }
 spawnHeartPuzzle();
 
+// -------------------- СМЕНА ЦЕНТРАЛЬНОГО СЕРДЦА С АНИМАЦИЕЙ --------------------
+const mainHeart = document.querySelector('.main-heart');
+
+function changeMainHeart() {
+  if (mainHeart.classList.contains('swapping')) return; // защита от повторного клика
+
+  mainHeart.classList.add('swapping');
+
+  setTimeout(() => {
+    const randomHeart = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+    mainHeart.innerText = randomHeart;
+  }, 300); // момент исчезновения
+
+  setTimeout(() => {
+    mainHeart.classList.remove('swapping');
+  }, 600); // конец анимации
+}
+
 /* ------------------ ✉️ Сообщения ------------------ */
 const phrases = [
   "Я думаю о тебе 💭",
@@ -480,7 +621,7 @@ const timePhrases = {
   morning: ["Доброе утро! ☀️ Пусть день будет сладким!", "Солнышко, просыпайся 💛"],
   day: ["День прекрасен с тобой 🌼", "Пусть твой день будет лёгким 💫"],
   evening: ["Вечерком вместе уютнее 💖", "Ночь приближается, но я думаю о тебе 🌙"],
-  night: ["Спокойной ночи 🌌", "Сладких снов, мой герой 😴"]
+  night: ["Спокойной ночи. Пите крепко крепко 🌌", "Сладких снов, мой любимый Бэбелль 😴", "Пите крепко крепкоооооо💖", "А чего мы не дрыхнииим? Ааа? небось учите шо то, ну ладнааа. Лю тебя💕 Поязяз не помри"]
 };
 
 // ------------------ Глобальный флаг для первого клика ------------------
