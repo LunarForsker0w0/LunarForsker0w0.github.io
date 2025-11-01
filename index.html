@@ -38,9 +38,31 @@ html, body {
   touch-action: none; /* предотвращает пан-жесты на мобильных */
 }
 
-h1 { font-size:1.8em; margin-bottom:10px; position:relative; z-index:1; }
-.countdown { font-size:2.2em; font-weight:bold; letter-spacing:1px; position:relative; z-index:1; }
-.label { font-size:0.9em; opacity:0.7; position:relative; z-index:1; margin-bottom:15px; }
+h1 {
+  font-size: 1.8em;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.countdown {
+  font-size: 2.2em;
+  font-weight: bold;
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.label {
+  font-size: 0.9em;
+  opacity: 0.7;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 15px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
 
 .bg-element { position:absolute; border-radius:15px; pointer-events:none; }
 .square { background: rgba(255,255,255,0.1); animation: floatSquare linear infinite alternate; }
@@ -155,10 +177,39 @@ h1 { font-size:1.8em; margin-bottom:10px; position:relative; z-index:1; }
   position: absolute;
   font-size: 32px;
   opacity: 0;
-  transform: scale(0.5);
-  animation: appear 0.8s forwards;
+  transform: scale(0.2) rotate(-10deg);
   cursor: pointer;
   z-index: 10;
+  animation: appearEnvelope 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes appearEnvelope {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-10deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes disappearEnvelope {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.3) rotate(20deg);
+  }
+}
+.envelope.disappearing {
+  animation: disappearEnvelope 0.6s cubic-bezier(0.5, 0, 0.8, 0.2) forwards;
 }
 @keyframes appear {
   to { opacity: 1; transform: scale(1); }
@@ -174,6 +225,7 @@ h1 { font-size:1.8em; margin-bottom:10px; position:relative; z-index:1; }
   opacity: 0;
   transform: translateY(-10px);
   animation: fadeOut 3.5s forwards;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 @keyframes fadeOut {
   10% { opacity: 1; transform: translateY(-20px); }
@@ -648,101 +700,76 @@ function getRandomPhrase() {
 
 // ------------------ Спавн конверта ------------------
 function spawnEnvelope() {
-  const e = document.createElement('div');
-  e.classList.add('envelope');
-  e.innerText = '💌';
-  e.style.position = 'absolute';
+  const e = document.createElement('div');
+  e.classList.add('envelope');
+  e.innerText = '💌';
+  const safeMarginX = 150;
+  const safeMarginY = 100;
+  e.style.left = getRandomBetween(safeMarginX, window.innerWidth - safeMarginX) + 'px';
+  e.style.top = getRandomBetween(safeMarginY, window.innerHeight - safeMarginY) + 'px';
+  document.body.appendChild(e);
 
-  const safeMarginX = 150; // запас слева и справа
-  const safeMarginY = 100; // запас сверху и снизу
-  const maxX = window.innerWidth - safeMarginX;
-  const maxY = window.innerHeight - safeMarginY;
+  let removed = false;
 
-  e.style.left = getRandomBetween(safeMarginX, maxX) + 'px';
-  e.style.top = getRandomBetween(safeMarginY, maxY) + 'px';
+  function removeEnvelope() {
+    if (removed) return;
+    removed = true;
+    e.classList.add('disappearing');
+    e.addEventListener('animationend', () => e.remove(), { once: true });
+  }
 
-  e.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-  e.style.opacity = 0;
-  document.body.appendChild(e);
+  function showMessage() {
+    if (removed) return;
+    removed = true;
 
-  // Плавное появление
-  requestAnimationFrame(() => e.style.opacity = 1);
+    // 💥 Вибрация (если поддерживается)
+    if (navigator.vibrate) {
+      navigator.vibrate([30, 20, 30]);
+    }
 
-  let removed = false;
+    // Удаляем конверт красиво
+    e.classList.add('disappearing');
+    e.addEventListener('animationend', () => e.remove(), { once: true });
 
-  function showMessage() {
-    if (removed) return;
-    removed = true;
-    
-    let phrase;
+    // Выбор фразы
+    let phrase;
+    if (!isFirstMessageShown) {
+      const timeOfDay = getTimeOfDay();
+      const timeSpecificPhrases = timePhrases[timeOfDay];
+      phrase = timeSpecificPhrases[Math.floor(Math.random() * timeSpecificPhrases.length)];
+      isFirstMessageShown = true;
+    } else {
+      phrase = getRandomPhrase();
+    }
 
-    // --- ЛОГИКА ДЛЯ ПЕРВОГО КЛИКА ---
-    if (!isFirstMessageShown) {
-      // При первом клике выбираем ТОЛЬКО из timePhrases
-      const timeOfDay = getTimeOfDay();
-      const timeSpecificPhrases = timePhrases[timeOfDay];
-      phrase = timeSpecificPhrases[Math.floor(Math.random() * timeSpecificPhrases.length)];
-      
-      // Устанавливаем флаг, чтобы следующие клики работали по стандартной логике
-      isFirstMessageShown = true; 
-      
-    } else {
-      // При всех последующих кликах используем оригинальную логику
-      phrase = getRandomPhrase();
-    }
-    // --------------------------------
+    // Создание сообщения
+    const msg = document.createElement('div');
+    msg.classList.add('message');
+    msg.innerText = phrase;
+    let left = parseFloat(e.style.left);
+    let top = parseFloat(e.style.top);
+    const msgWidth = 220;
+    if (left + msgWidth > window.innerWidth) left = window.innerWidth - msgWidth - 10;
+    if (top > window.innerHeight - 80) top = window.innerHeight - 80;
+    msg.style.left = left + 'px';
+    msg.style.top = top + 'px';
+    document.body.appendChild(msg);
 
-    const msg = document.createElement('div');
-    msg.classList.add('message');
-    msg.innerText = phrase; // Используем выбранную фразу
-    msg.style.position = 'absolute';
+    // Автоудаление сообщения
+    setTimeout(() => {
+      if (msg.parentNode) msg.remove();
+    }, 3500);
+  }
 
-    // проверяем чтобы сообщение не выходило за экран
-    const msgWidth = 200; // приблизительная ширина сообщения
-    const msgHeight = 60; // приблизительная высота сообщения
-    let left = parseFloat(e.style.left);
-    let top = parseFloat(e.style.top);
-
-    if (left + msgWidth > window.innerWidth) left = window.innerWidth - msgWidth - 20;
-    if (top + msgHeight > window.innerHeight) top = window.innerHeight - msgHeight - 20;
-
-    msg.style.left = left + 'px';
-    msg.style.top = top + 'px';
-    msg.style.opacity = 0;
-    msg.style.transition = 'opacity 1s ease, transform 1s ease';
-    document.body.appendChild(msg);
-
-    requestAnimationFrame(() => {
-      msg.style.opacity = 1;
-      msg.style.transform = 'translateY(-20px)';
-    });
-
-    setTimeout(() => {
-      msg.style.opacity = 0;
-      msg.style.transform = 'translateY(-40px)';
-      setTimeout(() => msg.remove(), 1000);
-    }, 2500);
-
-    e.remove();
-  }
-
-  e.addEventListener('click', showMessage);
-
-  setTimeout(() => {
-    if (!removed) {
-      removed = true;
-      e.style.opacity = 0;
-      e.style.transform = 'scale(0.5) rotate(-20deg)'; 
-      setTimeout(() => e.remove(), 800); 
-    }
-  }, 6000);
+  e.addEventListener('click', showMessage);
+  setTimeout(removeEnvelope, 6000); // исчезает через 6 сек, если не кликнули
 }
 
 
 // ------------------ Рандомный интервал спавна ------------------
 function spawnLoop() {
   spawnEnvelope();
-  const interval = getRandomBetween(4000, 60000); 
+  const interval = getRandomBetween(2000, 60000); 
   setTimeout(spawnLoop, interval);
 }
 
