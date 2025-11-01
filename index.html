@@ -98,6 +98,37 @@ h1 { font-size:1.8em; margin-bottom:10px; position:relative; z-index:1; }
 #timeLabel { color: white; margin-top: 5px; font-size: 0.9em; }
 
 .heart-piece { position: absolute; font-size: 35px; cursor: pointer; transition: transform 0.2s; }
+
+/* ✉️ Конверты */
+.envelope {
+  position: absolute;
+  font-size: 32px;
+  opacity: 0;
+  transform: scale(0.5);
+  animation: appear 0.8s forwards;
+  cursor: pointer;
+  z-index: 10;
+}
+@keyframes appear {
+  to { opacity: 1; transform: scale(1); }
+}
+
+.message {
+  position: absolute;
+  font-size: 1em;
+  background: rgba(255,255,255,0.15);
+  padding: 8px 14px;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: fadeOut 3.5s forwards;
+}
+@keyframes fadeOut {
+  10% { opacity: 1; transform: translateY(-20px); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-40px); }
+}
 </style>
 </head>
 <body>
@@ -110,7 +141,7 @@ h1 { font-size:1.8em; margin-bottom:10px; position:relative; z-index:1; }
 <div class="sun"></div>
 <div class="moon"></div>
 
-<div id="toggleSlider"><span>👁️</span></div>
+<div id="toggleSlider"><span>🌙</span></div>
 <div id="sliderContainer">
   <input type="range" min="0" max="23.99" step="0.01" id="timeSlider">
   <div id="timeLabel">Текущее время: --:--</div>
@@ -394,17 +425,165 @@ function checkConnection(idx){
   }
 }
 spawnHeartPuzzle();
+
+/* ------------------ ✉️ Сообщения ------------------ */
+const phrases = [
+  "Я думаю о тебе 💭",
+  "Ты - моё вдохновение 🌙",
+  "Скоро мы будем рядом 💞",
+  "Хочу обнять тебя крепко крепко 🤍",
+  "Мир стал ярче с тобой ✨",
+  "Люблю тебя 💜",
+  "Ты моё чудо 🌸",
+  "Жду с нетерпением 💫",
+  "Не забывай. ТЫ МОЩОЩЩЩЩ👾",
+  "МЫ МОЩОЩЩЩЩЩЩ👾",
+  "Я обниму тебя крепко крепко до смертиии💝",
+  "Люлю тебяяя💓",
+  "Лю💕",
+  "Ти мой милый Бэбелль🥰",
+  "Мое сердешко сходит с ума от тебя хых🔥",
+  "Все будет хорошо, не накручивай себя. Ладно?👀",
+  "Ты как сахарок в кофе ☕🍫",
+  "Не забывай куфать, холосо?🍫",
+  "Мечтаю... взять тебя за руку..",
+  "Ты активируешь мой вентральный тегментум сильнее, чем кофеин и дофамин вместе💓",
+  "Ты повышаешь мой уровень эндорфинов 🌸",
+  "С тобой PQRST моей жизни идеален ыхыхы💕",
+];
+
+// Дополнительные сообщения по времени суток
+const timePhrases = {
+  morning: ["Доброе утро! ☀️ Пусть день будет сладким!", "Солнышко, просыпайся 💛"],
+  day: ["День прекрасен с тобой 🌼", "Пусть твой день будет лёгким 💫"],
+  evening: ["Вечерком вместе уютнее 💖", "Ночь приближается, но я думаю о тебе 🌙"],
+  night: ["Спокойной ночи 🌌", "Сладких снов, мой герой 😴"]
+};
+
+// ------------------ Глобальный флаг для первого клика ------------------
+let isFirstMessageShown = false;
+
+// ------------------ Вспомогательные функции ------------------
+function getTimeOfDay() {
+  const hours = new Date().getHours();
+  if (hours >= 6 && hours < 12) return "morning";
+  if (hours >= 12 && hours < 18) return "day";
+  if (hours >= 18 && hours < 22) return "evening";
+  return "night";
+}
+
+function getRandomBetween(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function getRandomPhrase() {
+  // Эта функция используется для последующих (не первых) кликов
+  const allPhrases = [...phrases, ...timePhrases[getTimeOfDay()]];
+  return allPhrases[Math.floor(Math.random() * allPhrases.length)];
+}
+
+// ------------------ Спавн конверта ------------------
+function spawnEnvelope() {
+  const e = document.createElement('div');
+  e.classList.add('envelope');
+  e.innerText = '💌';
+  e.style.position = 'absolute';
+
+  const safeMarginX = 150; // запас слева и справа
+  const safeMarginY = 100; // запас сверху и снизу
+  const maxX = window.innerWidth - safeMarginX;
+  const maxY = window.innerHeight - safeMarginY;
+
+  e.style.left = getRandomBetween(safeMarginX, maxX) + 'px';
+  e.style.top = getRandomBetween(safeMarginY, maxY) + 'px';
+
+  e.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+  e.style.opacity = 0;
+  document.body.appendChild(e);
+
+  // Плавное появление
+  requestAnimationFrame(() => e.style.opacity = 1);
+
+  let removed = false;
+
+  function showMessage() {
+    if (removed) return;
+    removed = true;
+    
+    let phrase;
+
+    // --- ЛОГИКА ДЛЯ ПЕРВОГО КЛИКА ---
+    if (!isFirstMessageShown) {
+      // При первом клике выбираем ТОЛЬКО из timePhrases
+      const timeOfDay = getTimeOfDay();
+      const timeSpecificPhrases = timePhrases[timeOfDay];
+      phrase = timeSpecificPhrases[Math.floor(Math.random() * timeSpecificPhrases.length)];
+      
+      // Устанавливаем флаг, чтобы следующие клики работали по стандартной логике
+      isFirstMessageShown = true; 
+      
+    } else {
+      // При всех последующих кликах используем оригинальную логику
+      phrase = getRandomPhrase();
+    }
+    // --------------------------------
+
+    const msg = document.createElement('div');
+    msg.classList.add('message');
+    msg.innerText = phrase; // Используем выбранную фразу
+    msg.style.position = 'absolute';
+
+    // проверяем чтобы сообщение не выходило за экран
+    const msgWidth = 200; // приблизительная ширина сообщения
+    const msgHeight = 60; // приблизительная высота сообщения
+    let left = parseFloat(e.style.left);
+    let top = parseFloat(e.style.top);
+
+    if (left + msgWidth > window.innerWidth) left = window.innerWidth - msgWidth - 20;
+    if (top + msgHeight > window.innerHeight) top = window.innerHeight - msgHeight - 20;
+
+    msg.style.left = left + 'px';
+    msg.style.top = top + 'px';
+    msg.style.opacity = 0;
+    msg.style.transition = 'opacity 1s ease, transform 1s ease';
+    document.body.appendChild(msg);
+
+    requestAnimationFrame(() => {
+      msg.style.opacity = 1;
+      msg.style.transform = 'translateY(-20px)';
+    });
+
+    setTimeout(() => {
+      msg.style.opacity = 0;
+      msg.style.transform = 'translateY(-40px)';
+      setTimeout(() => msg.remove(), 1000);
+    }, 2500);
+
+    e.remove();
+  }
+
+  e.addEventListener('click', showMessage);
+
+  setTimeout(() => {
+    if (!removed) {
+      removed = true;
+      e.style.opacity = 0;
+      e.style.transform = 'scale(0.5) rotate(-20deg)'; 
+      setTimeout(() => e.remove(), 800); 
+    }
+  }, 6000);
+}
+
+
+// ------------------ Рандомный интервал спавна ------------------
+function spawnLoop() {
+  spawnEnvelope();
+  const interval = getRandomBetween(4000, 60000); 
+  setTimeout(spawnLoop, interval);
+}
+
+// Запуск
+spawnLoop();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
