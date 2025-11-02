@@ -59,6 +59,9 @@ html, body {
   touch-action: none; /* предотвращает пан-жесты на мобильных */
 }
 
+
+
+
 h1 {
   font-size: 1.8em;
   margin-bottom: 10px;
@@ -101,6 +104,49 @@ h1 {
   transform: translate(-50%, -50%);
   z-index: 0;
 }
+
+.twinkling-star {
+  position: absolute;
+  color: white;
+  font-size: 10px;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0; /* начальное состояние — невидимы */
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8),
+               0 0 16px rgba(255, 255, 255, 0.6),
+               0 0 24px rgba(200, 200, 255, 0.4);
+  animation: twinkle var(--duration, 2s) infinite ease-in-out;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: var(--min-opacity, 0.2); transform: scale(1); }
+  50%      { opacity: var(--max-opacity, 1);   transform: scale(1.1); }
+}
+
+.shooting-star {
+  position: absolute;
+  width: 120px;
+  height: 2px;
+  /* Убираем background, используем box-shadow или псевдоэлемент */
+  background: transparent;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  transform-origin: 0 1px; /* важно для корректного поворота из начала */
+}
+
+.shooting-star::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.9), transparent);
+  border-radius: 50%;
+}
+
+
 
 .particle { width:3px; height:3px; background:rgba(255,255,255,0.5); border-radius:50%; position:absolute; pointer-events:none; animation: floatParticle linear infinite; }
 @keyframes floatParticle { from{transform:translateY(0); opacity:0.3;} to{transform:translateY(-50px); opacity:0;} }
@@ -473,6 +519,71 @@ const toggleBtn = document.getElementById('toggleSlider');
 const sliderContainer = document.getElementById('sliderContainer');
 let manualTime = null;
 
+// ЗВЕЗДЫ НОЧНЫЕ
+
+// --- ЗВЁЗДЫ (НОВАЯ РЕАЛИЗАЦИЯ) ---
+let backgroundStars = [];
+let starsInitialized = false; // звёзды созданы хотя бы раз?
+let currentStarOpacity = 0;
+
+function initBackgroundStars(count = 80) {
+  if (starsInitialized) return;
+  starsInitialized = true;
+
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement('div');
+    star.classList.add('twinkling-star');
+    star.innerText = '★';
+
+    const x = Math.random() * 100;
+    const y = Math.random() * 50;
+    star.style.left = `${x}vw`;
+    star.style.top = `${y}vh`;
+
+    const normalizedY = y / 50;
+    const baseOpacity = 0.8 * (1 - normalizedY);
+    const minOpacity = baseOpacity * 0.3;
+    const maxOpacity = baseOpacity;
+    const duration = 1.5 + Math.random() * 2.5;
+
+    star.style.setProperty('--min-opacity', String(minOpacity));
+    star.style.setProperty('--max-opacity', String(maxOpacity));
+    star.style.setProperty('--duration', `${duration}s`);
+
+    // Начинаем с opacity: 0, но transition уже включён
+    star.style.opacity = '0';
+    star.style.transition = 'opacity 2s ease-in-out';
+
+    document.body.appendChild(star);
+    backgroundStars.push({ el: star, baseOpacity });
+  }
+}
+
+function updateStarsOpacity(targetOpacity) {
+  if (!starsInitialized) return;
+  if (Math.abs(targetOpacity - currentStarOpacity) < 0.01) return;
+  currentStarOpacity = targetOpacity;
+
+  backgroundStars.forEach(({ el, baseOpacity }) => {
+    const finalOpacity = baseOpacity * targetOpacity;
+    el.style.opacity = String(finalOpacity);
+    // Отключаем анимацию, если звезда полностью скрыта
+    if (targetOpacity <= 0) {
+      el.style.animation = 'none';
+    } else {
+      // Восстанавливаем анимацию
+      const duration = el.style.getPropertyValue('--duration') || '2s';
+      el.style.animation = `twinkle ${duration} infinite ease-in-out`;
+    }
+  });
+}
+
+
+
+
+
+
+
 toggleBtn.addEventListener('click', () => {
   sliderContainer.classList.toggle('visible');
 });
@@ -482,10 +593,11 @@ slider.addEventListener('input', () => {
   updateSunMoon();
 });
 
+
+// ЛУНА И СОЛНЦЕЕЕЕЕ
 function updateSunMoon(){
   const now = new Date();
   const hours = manualTime !== null ? manualTime : now.getHours() + now.getMinutes() / 60;
-
   timeLabel.innerText = `Текущее время: ${Math.floor(hours)}:${Math.floor((hours % 1) * 60).toString().padStart(2, '0')}`;
 
   sun.style.opacity = (hours >= 6 && hours <= 18) ? 1 : 0;
@@ -521,6 +633,25 @@ function updateSunMoon(){
     bgColor = blendColors(nightEnd, dayColor, t);
   }
   document.body.style.background = `linear-gradient(135deg, rgb(${bgColor.join(',')}), #4b0066)`;
+
+// --- УПРАВЛЕНИЕ ЗВЁЗДАМИ ---
+  if (hours < 6 || hours > 18) {
+    // Ночь — звёзды должны быть видны
+    initBackgroundStars(80); // безопасно вызывать каждый раз
+    // Плавная прозрачность: полная в глубокую ночь, частичная на закате/рассвете
+    let nightFactor;
+    if (hours > 18) {
+      nightFactor = Math.min(1, (hours - 18) / 3); // 18–21 → 0→1
+    } else {
+      nightFactor = Math.min(1, (6 - hours) / 3); // 3–6 → 1→0
+    }
+    updateStarsOpacity(nightFactor);
+  } else {
+    // День — звёзды невидимы
+    if (starsInitialized) {
+      updateStarsOpacity(0);
+    }
+  }
 }
 
 setInterval(updateSunMoon, 1000);
@@ -807,14 +938,79 @@ function spawnLoop() {
   setTimeout(spawnLoop, interval);
 }
 
+
+//Падение звезды
+
+function spawnShootingStar() {
+  const star = document.createElement('div');
+  star.classList.add('shooting-star');
+
+  // 1. Угол в математической системе (Y-вверх, 0° вправо)
+  const angleMath = -20 - Math.random() * 140; // от -20° до -160° 
+  const radians = angleMath * Math.PI / 180;
+
+  // 2. Угол в CSS-системе (Y-вниз, 0° вправо)
+  // Он является инверсией математического угла
+  const angleCSS = -angleMath;
+
+  // 3. Рассчитываем смещение (delta)
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  // Вычисляем истинную диагональ экрана и добавляем запас (коэффициент 1.5)
+  const distance = Math.sqrt(w * w + h * h) * 1.5;
+  const deltaX = Math.cos(radians) * distance;
+  const deltaY = -Math.sin(radians) * distance; // -sin для инверсии Y-оси
+
+  // 4. Начальная позиция
+  const startX = Math.random() * (window.innerWidth * 1.5) - window.innerWidth * 0.25;
+  const startY = -100;
+
+  star.style.left = startX + 'px';
+  star.style.top = startY + 'px';
+  
+  // 5. Анимация (используем angleCSS для rotate)
+  star.animate([
+    { transform: `translate(0, 0) rotate(${angleCSS + 180}deg)`, opacity: 1 },
+    { transform: `translate(${deltaX}px, ${deltaY}px) rotate(${angleCSS + 180}deg)`, opacity: 0 }
+  ], {
+    duration: 2000, // [cite: 164]
+    easing: 'cubic-bezier(0.5, 0, 0.8, 1)',
+    fill: 'forwards'
+  });
+  
+  document.body.appendChild(star); //[cite: 167]
+
+  setTimeout(() => {
+    if (star.parentNode) star.remove();
+  }, 2000); //[cite: 168]
+}
+
+
+function shootingStarLoop() {
+  // Запускаем звезду сразу
+  spawnShootingStar();
+  // И затем каждые 8–20 секунд (чаще ночью)
+  const now = new Date();
+  const hours = manualTime !== null ? manualTime : now.getHours() + now.getMinutes() / 60;
+  const isNight = hours < 6 || hours > 18;
+  const interval = isNight 
+    ? getRandomBetween(1000, 6000)   // ночью чаще
+    : getRandomBetween(15000, 40000); // днём реже
+
+  setTimeout(shootingStarLoop, interval);
+}
+
 // Запуск
 spawnLoop();
+shootingStarLoop();
+
+
 </script>
 
 
 
 
-<div class="version">v1.26</div>
+<div class="version">v1.30</div>
 </body>
 </html>
 
