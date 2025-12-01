@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="data:application/manifest+json,{
   %22name%22:%22До нашей встречи%22,
   %22short_name%22:%22Встреча%22,
@@ -63,20 +63,65 @@ html, body {
 
 
 h1 {
+  font-family: 'Comfortaa', cursive; /* Добавили шрифт */
+  font-weight: 400; /* Чуть тоньше, чтобы выглядело элегантно */
   font-size: 1.8em;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   position: relative;
   z-index: 1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .countdown {
-  font-size: 2.2em;
-  font-weight: bold;
-  letter-spacing: 1px;
+  /* --- ШРИФТ И ТЕКСТ (Вариант 1) --- */
+  font-family: 'Comfortaa', cursive;
+  font-weight: 700;
+  font-size: 1.4em;
+  letter-spacing: 2px;
+  /* Легкое свечение самого текста */
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+
+  /* --- СТЕКЛЯННАЯ ПЛАШКА (Вариант 2) --- */
+  background: rgba(255, 255, 255, 0.12); /* Полупрозрачный фон */
+  backdrop-filter: blur(12px);           /* Размытие фона под таймером */
+  -webkit-backdrop-filter: blur(12px);   /* Для Safari */
+  border-radius: 25px;                   /* Закругленные углы */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Тонкая светящаяся рамка */
+  
+  /* Отступы, чтобы текст не прилипал к рамке */
+  padding: 15px 40px;
+  
+  /* Позиционирование */
+  display: inline-block; /* Плашка облегает текст */
+  margin: 15px 0 25px 0;
   position: relative;
-  z-index: 1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  z-index: 10; /* Поверх гор */
+  
+  /* --- АНИМАЦИЯ (Объединенная) --- */
+  /* Таймер будет плавно "дышать" и пульсировать светом */
+  animation: magicGlow 4s ease-in-out infinite;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Анимация магического дыхания */
+@keyframes magicGlow {
+  0% {
+    transform: scale(1);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    transform: scale(1.03); /* Чуть увеличивается */
+    border-color: rgba(255, 255, 255, 0.6); /* Рамка становится ярче */
+    box-shadow: 
+      0 8px 32px 0 rgba(0, 0, 0, 0.2),
+      0 0 20px rgba(255, 150, 200, 0.3); /* Добавляется розовое свечение */
+  }
+  100% {
+    transform: scale(1);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  }
 }
 
 .label {
@@ -312,6 +357,194 @@ h1 {
   pointer-events: none;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
+
+/* --- ГОРЫ --- */
+.mountains-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 35vh; /* Занимают 35% высоты экрана */
+  z-index: 0; /* Поверх солнца, но под текстом */
+  pointer-events: none; /* Чтобы клики проходили сквозь них */
+  overflow: hidden;
+}
+
+.mountain-svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Настройка цветов для слоев гор */
+.mtn-back {
+  fill: var(--mtn-back-col, rgba(60, 20, 80, 0.5));
+  transform-origin: bottom;
+  animation: floatMt 10s ease-in-out infinite alternate;
+  transition: fill 2s linear; /* Плавная смена цвета */
+}
+.mtn-mid {
+  fill: var(--mtn-mid-col, rgba(40, 10, 60, 0.7));
+  transform-origin: bottom;
+  animation: floatMt 8s ease-in-out infinite alternate-reverse;
+  transition: fill 2s linear;
+}
+.mtn-front {
+  fill: var(--mtn-front-col, rgba(20, 5, 35, 0.9));
+  transition: fill 2s linear;
+}
+
+/* Легкое дыхание гор */
+@keyframes floatMt {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(1.02); }
+}
+
+/* Адаптация для мобильных: чуть выше горы */
+@media (max-width: 600px) {
+  .mountains-container {
+    height: 30vh;
+  }
+}
+
+/* --- ТУМАН --- */
+.fog-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 15vh; /* Высота тумана */
+  z-index: 1; /* Поверх задних гор, но под передними */
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fog-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  /* Цвет тумана тоже сделаем управляемым, чтобы днем он был заметнее */
+  background: linear-gradient(to top, var(--fog-col, rgba(255,255,255,0.4)) 0%, rgba(255,255,255,0.2) 40%, transparent 100%);
+  animation: moveFog 30s linear infinite alternate;
+  opacity: var(--fog-opacity, 1);
+  transition: opacity 3s linear, background 3s linear;
+}
+
+.fog-layer.second {
+  background: linear-gradient(to top, rgba(75, 0, 102, 0.2) 0%, transparent 100%);
+  animation-duration: 45s;
+  animation-direction: alternate-reverse;
+  bottom: -10px;
+}
+
+@keyframes moveFog {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50px); }
+}
+
+/* --- ДОМИК --- */
+.cabin-container {
+  position: absolute;
+  bottom: 3vh; /* Чуть выше нижнего края */
+  right: 10%; /* Сдвинут вправо */
+  width: 40px;
+  height: 30px;
+  z-index: 0; /* На уровне гор */
+  opacity: 0.9;
+}
+
+/* Крыша и стены */
+.cabin-shape {
+  width: 0; 
+  height: 0; 
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 20px solid var(--cabin-col, #140523); /* Переменная */
+  position: absolute;
+  top: -15px;
+  transition: border-bottom-color 2s linear;
+}
+.cabin-body {
+  width: 30px;
+  height: 20px;
+  background-color: var(--cabin-col, #140523); /* Переменная */
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  transition: background-color 2s linear;
+}
+/* Труба */
+.cabin-chimney {
+  width: 6px;
+  height: 12px;
+  background-color: var(--cabin-col, #140523); /* Переменная */
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  transition: background-color 2s linear;
+}
+/* Светящееся окно */
+.cabin-window {
+  width: 8px;
+  height: 8px;
+  background-color: #FFD700; /* Желтый свет */
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  border-radius: 1px;
+  box-shadow: 0 0 10px 2px rgba(255, 215, 0, 0.6); /* Свечение */
+  animation: flickerWindow 4s infinite alternate;
+}
+/* Дым из трубы */
+.cabin-smoke {
+  position: absolute;
+  top: -15px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 50%;
+  animation: smokeRise 3s infinite;
+  opacity: 0;
+}
+
+@keyframes flickerWindow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+  52% { opacity: 0.9; }
+  54% { opacity: 0.7; }
+}
+
+@keyframes smokeRise {
+  0% { transform: translateY(0) scale(1); opacity: 0.5; }
+  100% { transform: translateY(-20px) scale(2); opacity: 0; }
+}
+
+
+/* --- СНЕЖИНКИ --- */
+.snowflake {
+  position: absolute;
+  top: -20px;
+  color: white;
+  pointer-events: none;
+  z-index: 2; /* Поверх гор, но под интерфейсом, если нужно */
+  font-family: Arial, sans-serif; /* Чтобы символ выглядел одинаково */
+  text-shadow: 0 0 5px rgba(255,255,255,0.8);
+  animation: fall linear forwards;
+}
+
+@keyframes fall {
+  0% { transform: translateY(-20px) translateX(0) rotate(0deg); }
+  25% { transform: translateY(25vh) translateX(15px) rotate(45deg); }
+  50% { transform: translateY(50vh) translateX(-15px) rotate(90deg); }
+  75% { transform: translateY(75vh) translateX(15px) rotate(135deg); }
+  100% { transform: translateY(110vh) translateX(0) rotate(180deg); }
+}
+
 </style>
 </head>
 <body>
@@ -323,6 +556,30 @@ h1 {
 
 <div class="sun"></div>
 <div class="moon"></div>
+
+<div class="mountains-container">
+  
+<div class="fog-container">
+  <div class="fog-layer"></div>
+  <div class="fog-layer second"></div>
+</div>
+
+  <svg class="mountain-svg" viewBox="0 0 1440 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path class="mtn-back" d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+    
+    <path class="mtn-mid" d="M0,224L60,213.3C120,203,240,181,360,186.7C480,192,600,224,720,218.7C840,213,960,171,1080,160C1200,149,1320,171,1380,181.3L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
+    
+    <path class="mtn-front" d="M0,256L80,245.3C160,235,320,213,480,218.7C640,224,800,256,960,261.3C1120,267,1280,245,1360,234.7L1440,224L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"></path>
+  </svg>
+  <div class="cabin-container">
+        <div class="cabin-chimney"></div>
+        <div class="cabin-shape"></div>
+        <div class="cabin-body"></div>
+        <div class="cabin-window"></div>
+        <div class="cabin-smoke"></div>
+    </div>
+</div>
+
 
 <div id="toggleSlider"><span>🌙</span></div>
 <div id="sliderContainer">
@@ -652,6 +909,70 @@ function updateSunMoon(){
       updateStarsOpacity(0);
     }
   }
+// --- НАЧАЛО ВСТАВКИ: Динамические цвета гор и домика ---
+  
+  // Определяем цвета для ДНЯ (светлые, сиреневые) и НОЧИ (темные)
+  // Формат RGB массивов: [R, G, B]
+  
+  const cols = {
+    day: {
+      back: [170, 140, 190],  // Светло-сиреневый (дальняя гора)
+      mid:  [130, 90, 160],   // Средний
+      front:[100, 60, 130],   // Ближний (насыщенный фиолетовый)
+      cabin:[110, 70, 120],   // Цвет домика днем
+      fog:  [255, 255, 255],  // Туман белый
+      fogOp: 0.1             // Туман плотнее днем, чтобы его было видно
+    },
+    night: {
+      back: [60, 20, 80],     // Темный (как было раньше)
+      mid:  [40, 10, 60],
+      front:[20, 5, 35],
+      cabin:[20, 5, 35],      // Домик сливается с передней горой
+      fog:  [255, 255, 255],
+      fogOp: 0.8              // Ночью туман прозрачнее
+    }
+  };
+
+  // Вычисляем коэффициент "ночи" (0 = день, 1 = глухая ночь)
+  // Используем логику, похожую на opacity звезд
+  let t_mountains = 0; // 0 - это день
+  
+  if (hours < 6) { 
+    // от 0 до 6 утра: ночь убывает (1 -> 0) или полная ночь
+    // упростим: используем ту же логику переходов, что и у неба
+    t_mountains = 1; 
+  } else if (hours >= 6 && hours < 9) {
+    t_mountains = 1 - (hours - 6) / 3; // Рассвет: 1 -> 0
+  } else if (hours >= 9 && hours < 17) {
+    t_mountains = 0; // День
+  } else if (hours >= 17 && hours < 21) {
+    t_mountains = (hours - 17) / 4; // Закат: 0 -> 1
+  } else {
+    t_mountains = 1; // Ночь
+  }
+
+  // Функция смешивания (она уже есть у тебя - blendColors, но используем её тут)
+  const curBack = blendColors(cols.day.back, cols.night.back, t_mountains);
+  const curMid  = blendColors(cols.day.mid,  cols.night.mid,  t_mountains);
+  const curFrnt = blendColors(cols.day.front,cols.night.front,t_mountains);
+  const curCab  = blendColors(cols.day.cabin,cols.night.cabin,t_mountains);
+  
+  // Туман (цвет + прозрачность)
+  // Для прозрачности используем lerp (функция тоже уже есть в коде)
+  const curFogOp = lerp(cols.day.fogOp, cols.night.fogOp, t_mountains);
+  
+  // Применяем переменные CSS
+  const r = document.documentElement.style;
+  r.setProperty('--mtn-back-col', `rgb(${curBack.join(',')})`);
+  r.setProperty('--mtn-mid-col',  `rgb(${curMid.join(',')})`);
+  r.setProperty('--mtn-front-col',`rgb(${curFrnt.join(',')})`);
+  r.setProperty('--cabin-col',    `rgb(${curCab.join(',')})`);
+  r.setProperty('--fog-opacity',  curFogOp);
+  
+  // Туман можно слегка подкрасить в цвет заката, если хочешь, но пока оставим белым
+  // r.setProperty('--fog-col', `rgba(255,255,255, ${curFogOp})`); 
+
+  // --- КОНЕЦ ВСТАВКИ ---
 }
 
 setInterval(updateSunMoon, 1000);
@@ -831,6 +1152,8 @@ const phrases = [
   "Ты активируешь мой вентральный тегментум сильнее, чем кофеин и дофамин вместе💓",
   "Ты повышаешь мой уровень эндорфинов 🌸",
   "С тобой PQRST моей жизни идеален ыхыхы💕",
+  "Ти мой любимый летучий котёмыфь💓",
+  "Любимый мальчик с пиздой👀",
 ];
 
 // Дополнительные сообщения по времени суток
@@ -1004,13 +1327,38 @@ function shootingStarLoop() {
 spawnLoop();
 shootingStarLoop();
 
+// -------------------- СНЕГОПАД --------------------
+function createSnowflake() {
+  const snowflake = document.createElement('div');
+  snowflake.classList.add('snowflake');
+  snowflake.innerText = '•'; // Можно заменить на '•' для простых точек
+  
+  // Рандомные параметры
+  const size = Math.random() * 15 + 10; // Размер от 10 до 25px
+  snowflake.style.fontSize = size + 'px';
+  snowflake.style.left = Math.random() * window.innerWidth + 'px';
+  snowflake.style.opacity = Math.random() * 0.5 + 0.3; // Прозрачность
+  
+  // Скорость падения зависит от размера (крупные падают быстрее)
+  const duration = Math.random() * 10 + 20 + (30 - size) / 5; 
+  snowflake.style.animationDuration = duration + 's';
 
+  document.body.appendChild(snowflake);
+
+  // Удаление после завершения анимации
+  setTimeout(() => {
+    snowflake.remove();
+  }, duration * 1000);
+}
+
+// Запуск снегопада (интервал можно менять: 200 - густой, 800 - редкий)
+setInterval(createSnowflake, 600);
 </script>
 
 
 
 
-<div class="version">v1.31</div>
+<div class="version">v1.4</div>
 </body>
 </html>
 
